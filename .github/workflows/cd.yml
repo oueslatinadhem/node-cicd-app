@@ -1,0 +1,23 @@
+name: CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    if: ${{ success() }}
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Log in to DockerHub
+      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+    - name: Pull and run Docker image on server
+      run: |
+        docker pull username/node-cicd-app:latest
+        docker stop node-cicd-app || true
+        docker rm node-cicd-app || true
+        docker run -d -p 80:3000 --name node-cicd-app username/node-cicd-app:latest
